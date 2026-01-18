@@ -9,5 +9,22 @@ This is a Quarto website.
 To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
 
 ```{r}
-1 + 1
+library(Seurat)
+library(SeuratData)
+library(ggplot2)
+library(patchwork)
+library(dplyr)
+
+```
+
+```{r}
+Colon <- readRDS('/Users/chirag/Documents/Colorectal Cancer Research /Patient Data/colon_pca_run.rds')
+Colon
+
+```
+
+```{r}
+p2 <- SpatialDimPlot(Colon, label = FALSE, group.by = "seurat_clusters", pt.size.factor = 6, image.alpha = 0)
+p2
+
 ```
