@@ -1,5 +1,5 @@
 ---
-title: "Hello, Quarto"
+title: "Genomics of CRC"
 format: html
 editor: visual
 ---
@@ -24,7 +24,100 @@ Colon
 ```
 
 ```{r}
-p2 <- SpatialDimPlot(Colon, label = FALSE, group.by = "seurat_clusters", pt.size.factor = 6, image.alpha = 0)
-p2
+p1 <- SpatialFeaturePlot(
+  Colon, 
+  features = c("CLCA1", "FCGBP", "MUC2"),
+  pt.size.factor = 4,  
+  alpha = c(0.1, 1),     
+  image.alpha = 0.5,
+  stroke = 0             
+)
+theme_void() &
+  theme(
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    legend.position = "right",
+    legend.text = element_text(size = 10),
+    legend.title = element_text(size = 11, face = "bold"),
+    plot.margin = margin(10, 10, 10, 10)
+)
+scale_fill_gradientn(
+    colors = c("lightgrey", "yellow", "red", "darkred"),
+    name = "Expression"
+  )
+p1
+```
 
+```{r}
+head(Colon)
+```
+
+```{r}
+library(Polychrome)
+
+n.clusters <- length(levels(Colon$Spatial_snn_res.0.4))
+cluster.cols <- setNames(Polychrome::kelly.colors(n.clusters), 0:12)
+
+p3_pub <- SpatialDimPlot(
+  Colon,
+  group.by = "Spatial_snn_res.0.4",
+  label = FALSE,
+  pt.size.factor = 6,
+  image.alpha = 0, alpha = 1
+) +
+  scale_fill_manual(values = cluster.cols) +
+  guides(fill = guide_legend(
+    override.aes = list(size = 4),
+    title = "Spatial clusters"
+  )) +
+  theme_void() +
+  theme(
+    legend.position = "right",
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 9)
+  )
+
+p3_pub
+
+```
+
+```{r}
+Colon@meta.data <- Colon@meta.data %>% mutate(annotations = case_when(
+Spatial_snn_res.0.4 %in% 4 ~ 'Goblet', 
+Spatial_snn_res.0.4 %in% 1 ~ 'Fibroblasts',
+Spatial_snn_res.0.4 %in% c(5, 6, 7) ~ 'Immune Cells',
+TRUE ~ as.character(Spatial_snn_res.0.4)
+))
+```
+
+```{r}
+library(Polychrome)
+
+n.clusters <- length(unique(Colon$annotations))
+cluster.cols <- setNames(Polychrome::kelly.colors(n.clusters), unique(Colon$annotations))
+
+p3_pub1 <- SpatialDimPlot(
+  Colon,
+  group.by = "annotations",
+  label = FALSE,
+  pt.size.factor = 6,
+  image.alpha = 0, alpha = 1
+) +
+  scale_fill_manual(values = cluster.cols) +
+  guides(fill = guide_legend(
+    override.aes = list(size = 4),
+    title = "Spatial clusters"
+  )) +
+  theme_void() +
+  theme(
+    legend.position = "right",
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 9)
+  )
+
+p3_pub1
+```
+
+```{r}
+Markers <- FindAllMarkers(Colon, group.by = "Spatial_snn_res.0.4")
+head(Markers)
 ```
