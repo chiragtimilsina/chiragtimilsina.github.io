@@ -31,6 +31,7 @@ Colon
 First, we identified the number of spots present in the raw data. Here, every spots (8X8 um hexagonal shaped spot) represent a cell in that specific cell population. We convert the raw output data into **UMI (Unique molecular identifier) count matrix.**
 
 ```{r}
+#| echo: false
 plot1 <- VlnPlot(
   Colon,
   features = "nCount_Spatial",
@@ -74,6 +75,7 @@ final_plot
 We then cluster the tissue into different cell-populations. Here, each 12 spatial clusters represent specific type of cells, and the genes they are expressing. This allows us to map the interaction between different cell types.
 
 ```{r}
+#| echo: false
 library(Polychrome)
 
 n.clusters <- length(levels(Colon$Spatial_snn_res.0.4))
@@ -105,6 +107,7 @@ p3_pub
 The following FeaturePlot show the spatial locations of **goblet cells**. The expression of the genes CLCA1, FCGBP, and MUC2 were identified in the tissue.
 
 ```{r}
+#| echo: false
 genes <- c("CLCA1", "FCGBP", "MUC2")
 
 p_feature_pub <- SpatialFeaturePlot(
@@ -138,6 +141,7 @@ p_feature_pub
 Similarly, the following plot shows the expression of the genes REG1A, REG1B, CEACAM6, and TGFBI. The expressions represents the presence of **tumor cells** in the regions
 
 ```{r}
+#| echo: false
 genes <- c("REG1A", "REG1B", "CEACAM6", "TGFBI")
 
 p_feature_pub <- SpatialFeaturePlot(
@@ -171,6 +175,7 @@ p_feature_pub
 Now, the following plot represents the presence of **Fibroblasts**. The expression of the genes COL1A1 and MMP2 are shown in the plots
 
 ```{r}
+#| echo: false
 genes <- c("COL1A1", "MMP2")
 
 p_feature_pub <- SpatialFeaturePlot(
@@ -204,6 +209,7 @@ p_feature_pub
 Similar plots can be drawn for the cell cluster Macrophage. We can identify the expression of the genes 'LYZ1' and 'SPP1'.
 
 ```{r}
+#| echo: false
 genes <- c("LYZ1", "SPP1")
 
 p_feature_pub <- SpatialFeaturePlot(
@@ -237,6 +243,7 @@ p_feature_pub
 Finally, we identify the population of Neutrophils through the expression of the gene 'SAT1'
 
 ```{r}
+#| echo: false
 genes <- c("SAT1")
 
 p_feature_pub <- SpatialFeaturePlot(
@@ -270,6 +277,7 @@ p_feature_pub
 To place similar cells together in a low-dimensional space, we not visualize a UMAP plot. This method aim to preserve local distances in the dataset.
 
 ```{r}
+#| echo: false
 p1_pub <- DimPlot(
   Colon,
   reduction = "umap",
