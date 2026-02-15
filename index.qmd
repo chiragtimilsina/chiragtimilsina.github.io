@@ -4,9 +4,9 @@ format: html
 editor: visual
 ---
 
-This is a Quarto website.
+# Understanding the genomics and histological features of colorectal cancer using spatial transcriptomics
 
-To learn more about Quarto websites visit <https://quarto.org/docs/websites>.
+Spatial Transcriptomics allows us to identify what genes are being expressed in particular space within a tissue, allowing us to spatially analyze the types of interactions between cellular sub-populations. In this analysis, we're trying to verify how raw genetic data are processed using R, and how specific plots are generated using bioinformatic analysis.
 
 ```{r}
 library(Seurat)
@@ -17,39 +17,61 @@ library(dplyr)
 
 ```
 
+# Data Description
+
+The data used is extracted from 10X Genomic's Visium HD technology. This [dataset](#0) is associated with the paper titled 'High Definition spatial transcriptomic profiling of immune cell populations in colorectal cancer.'
+
 ```{r}
-Colon <- readRDS('/Users/chirag/Documents/Colorectal Cancer Research /Patient Data/colon_pca_run.rds')
+Colon <- readRDS('/Users/chirag/Documents/Documents/Colorectal Cancer Research /Patient Data/colon_pca_run.rds')
 Colon
-
 ```
 
+# Data pre-processing
+
+First, we identified the number of spots present in the raw data. Here, every spots (8X8 um hexagonal shaped spot) represent a cell in that specific cell population. We convert the raw output data into **UMI (Unique molecular identifier) count matrix.**
+
 ```{r}
-p1 <- SpatialFeaturePlot(
-  Colon, 
-  features = c("CLCA1", "FCGBP", "MUC2"),
-  pt.size.factor = 4,  
-  alpha = c(0.1, 1),     
-  image.alpha = 0.5,
-  stroke = 0             
-)
-theme_void() &
+plot1 <- VlnPlot(
+  Colon,
+  features = "nCount_Spatial",
+  pt.size = 0
+) +
+  geom_violin(width = 0.5) +   # narrower violins → more space
+  scale_x_discrete(expand = expansion(add = 0.8)) +  # increase spacing
+  labs(
+    y = "Spatial UMI Counts",
+    x = "Cluster"
+  ) +
+  theme_classic(base_size = 14) +
   theme(
-    plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1, size = 10),
+    axis.text.y = element_text(size = 12),
+    axis.title = element_text(size = 14, face = "bold"),
+    plot.title = element_text(face = "bold", size = 15)
+  ) +
+  NoLegend()
+plot2 <- SpatialFeaturePlot(
+  Colon,
+  features = "nCount_Spatial",
+  alpha = c(0.1, 1)
+) +
+  scale_fill_viridis_c(option = "magma") +
+  labs(fill = "UMI Count") +
+  theme(
     legend.position = "right",
-    legend.text = element_text(size = 10),
-    legend.title = element_text(size = 11, face = "bold"),
-    plot.margin = margin(10, 10, 10, 10)
-)
-scale_fill_gradientn(
-    colors = c("lightgrey", "yellow", "red", "darkred"),
-    name = "Expression"
+    legend.title = element_text(size = 13, face = "bold"),
+    legend.text = element_text(size = 11)
   )
-p1
+final_plot <- plot1 + plot2 +
+  plot_annotation(tag_levels = "A")
+
+final_plot
+
 ```
 
-```{r}
-head(Colon)
-```
+# Clustering
+
+We then cluster the tissue into different cell-populations. Here, each 12 spatial clusters represent specific type of cells, and the genes they are expressing. This allows us to map the interaction between different cell types.
 
 ```{r}
 library(Polychrome)
@@ -80,27 +102,200 @@ p3_pub
 
 ```
 
+The following FeaturePlot show the spatial locations of **goblet cells**. The expression of the genes CLCA1, FCGBP, and MUC2 were identified in the tissue.
+
 ```{r}
-Colon@meta.data <- Colon@meta.data %>% mutate(annotations = case_when(
-Spatial_snn_res.0.4 %in% 4 ~ 'Goblet', 
-Spatial_snn_res.0.4 %in% 1 ~ 'Fibroblasts',
-Spatial_snn_res.0.4 %in% c(5, 6, 7) ~ 'Immune Cells',
-TRUE ~ as.character(Spatial_snn_res.0.4)
-))
+genes <- c("CLCA1", "FCGBP", "MUC2")
+
+p_feature_pub <- SpatialFeaturePlot(
+  Colon,
+  features = genes,
+  pt.size.factor = 6,
+  image.alpha = 0,
+  alpha = c(0.2, 1),
+  min.cutoff = "q10",
+  max.cutoff = "q90",
+  keep.scale = "all"
+) &
+  scale_fill_viridis_c(
+    option = "inferno",
+    name = "Normalized\nExpression"
+  ) &
+  theme_void() &
+  theme(
+    plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
+    legend.position = "right",
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 9)
+  )
+
+p_feature_pub <- p_feature_pub +
+  plot_annotation(tag_levels = "A")
+
+p_feature_pub
 ```
 
+Similarly, the following plot shows the expression of the genes REG1A, REG1B, CEACAM6, and TGFBI. The expressions represents the presence of **tumor cells** in the regions
+
 ```{r}
-library(Polychrome)
+genes <- c("REG1A", "REG1B", "CEACAM6", "TGFBI")
 
-n.clusters <- length(unique(Colon$annotations))
-cluster.cols <- setNames(Polychrome::kelly.colors(n.clusters), unique(Colon$annotations))
-
-p3_pub1 <- SpatialDimPlot(
+p_feature_pub <- SpatialFeaturePlot(
   Colon,
-  group.by = "annotations",
-  label = FALSE,
+  features = genes,
   pt.size.factor = 6,
-  image.alpha = 0, alpha = 1
+  image.alpha = 0,
+  alpha = c(0.2, 1),
+  min.cutoff = "q10",
+  max.cutoff = "q90",
+  keep.scale = "all"
+) &
+  scale_fill_viridis_c(
+    option = "inferno",
+    name = "Normalized\nExpression"
+  ) &
+  theme_void() &
+  theme(
+    plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
+    legend.position = "right",
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 9)
+  )
+
+p_feature_pub <- p_feature_pub +
+  plot_annotation(tag_levels = "A")
+
+p_feature_pub
+```
+
+Now, the following plot represents the presence of **Fibroblasts**. The expression of the genes COL1A1 and MMP2 are shown in the plots
+
+```{r}
+genes <- c("COL1A1", "MMP2")
+
+p_feature_pub <- SpatialFeaturePlot(
+  Colon,
+  features = genes,
+  pt.size.factor = 6,
+  image.alpha = 0,
+  alpha = c(0.2, 1),
+  min.cutoff = "q10",
+  max.cutoff = "q90",
+  keep.scale = "all"
+) &
+  scale_fill_viridis_c(
+    option = "inferno",
+    name = "Normalized\nExpression"
+  ) &
+  theme_void() &
+  theme(
+    plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
+    legend.position = "right",
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 9)
+  )
+
+p_feature_pub <- p_feature_pub +
+  plot_annotation(tag_levels = "A")
+
+p_feature_pub
+```
+
+Similar plots can be drawn for the cell cluster Macrophage. We can identify the expression of the genes 'LYZ1' and 'SPP1'.
+
+```{r}
+genes <- c("LYZ1", "SPP1")
+
+p_feature_pub <- SpatialFeaturePlot(
+  Colon,
+  features = genes,
+  pt.size.factor = 6,
+  image.alpha = 0,
+  alpha = c(0.2, 1),
+  min.cutoff = "q10",
+  max.cutoff = "q90",
+  keep.scale = "all"
+) &
+  scale_fill_viridis_c(
+    option = "inferno",
+    name = "Normalized\nExpression"
+  ) &
+  theme_void() &
+  theme(
+    plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
+    legend.position = "right",
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 9)
+  )
+
+p_feature_pub <- p_feature_pub +
+  plot_annotation(tag_levels = "A")
+
+p_feature_pub
+```
+
+Finally, we identify the population of Neutrophils through the expression of the gene 'SAT1'
+
+```{r}
+genes <- c("SAT1")
+
+p_feature_pub <- SpatialFeaturePlot(
+  Colon,
+  features = genes,
+  pt.size.factor = 6,
+  image.alpha = 0,
+  alpha = c(0.2, 1),
+  min.cutoff = "q10",
+  max.cutoff = "q90",
+  keep.scale = "all"
+) &
+  scale_fill_viridis_c(
+    option = "inferno",
+    name = "Normalized\nExpression"
+  ) &
+  theme_void() &
+  theme(
+    plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
+    legend.position = "right",
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 9)
+  )
+
+p_feature_pub <- p_feature_pub +
+  plot_annotation(tag_levels = "A")
+
+p_feature_pub
+```
+
+To place similar cells together in a low-dimensional space, we not visualize a UMAP plot. This method aim to preserve local distances in the dataset.
+
+```{r}
+p1_pub <- DimPlot(
+  Colon,
+  reduction = "umap",
+  group.by = "Spatial_snn_res.0.4",
+  label = TRUE,
+  label.size = 4,
+  pt.size = 1.2
+) +
+  scale_color_manual(values = cluster.cols) +
+  guides(color = guide_legend(
+    override.aes = list(size = 4),
+    title = "Spatial clusters"
+  )) +
+  theme_void() +
+  theme(
+    legend.position = "right",
+    legend.title = element_text(size = 10),
+    legend.text = element_text(size = 9)
+  )
+p2_pub <- SpatialDimPlot(
+  Colon,
+  group.by = "Spatial_snn_res.0.4",
+  label = TRUE,
+  label.size = 3,
+  pt.size.factor = 6,
+  image.alpha = 0
 ) +
   scale_fill_manual(values = cluster.cols) +
   guides(fill = guide_legend(
@@ -113,8 +308,22 @@ p3_pub1 <- SpatialDimPlot(
     legend.title = element_text(size = 10),
     legend.text = element_text(size = 9)
   )
+final_umap_spatial <- p1_pub + p2_pub +
+  plot_annotation(tag_levels = "A")
 
-p3_pub1
+final_umap_spatial
+```
+
+```{r}
+Colon@meta.data <- Colon@meta.data %>% mutate(annotations = case_when(
+Spatial_snn_res.0.4 %in% 4 ~ 'Goblet', 
+Spatial_snn_res.0.4 %in% 1 ~ 'Fibroblasts',
+Spatial_snn_res.0.4 %in% c(5, 6, 7) ~ 'Immune Cells',
+TRUE ~ as.character(Spatial_snn_res.0.4)
+))
+```
+
+```{}
 ```
 
 ```{r}
