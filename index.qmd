@@ -9,6 +9,9 @@ editor: visual
 Spatial Transcriptomics allows us to identify what genes are being expressed in particular space within a tissue, allowing us to spatially analyze the types of interactions between cellular sub-populations. In this analysis, we're trying to verify how raw genetic data are processed using R, and how specific plots are generated using bioinformatic analysis.
 
 ```{r}
+#| echo: false
+#| warning: false
+#| message: false
 library(Seurat)
 library(SeuratData)
 library(ggplot2)
@@ -19,9 +22,12 @@ library(dplyr)
 
 # Data Description
 
-The data used is extracted from 10X Genomic's Visium HD technology. This [dataset](#0) is associated with the paper titled 'High Definition spatial transcriptomic profiling of immune cell populations in colorectal cancer.'
+The data used is extracted from 10X Genomic's Visium HD technology. This [dataset](#0) is associated with the paper titled **'High Definition spatial transcriptomic profiling of immune cell populations in colorectal cancer.'**
 
 ```{r}
+#| echo: false
+#| warning: false
+#| message: false
 Colon <- readRDS('/Users/chirag/Documents/Documents/Colorectal Cancer Research /Patient Data/colon_pca_run.rds')
 Colon
 ```
@@ -32,6 +38,8 @@ First, we identified the number of spots present in the raw data. Here, every sp
 
 ```{r}
 #| echo: false
+#| warning: false
+#| message: false
 plot1 <- VlnPlot(
   Colon,
   features = "nCount_Spatial",
@@ -76,6 +84,8 @@ We then cluster the tissue into different cell-populations. Here, each 12 spatia
 
 ```{r}
 #| echo: false
+#| warning: false
+#| message: false
 library(Polychrome)
 
 n.clusters <- length(levels(Colon$Spatial_snn_res.0.4))
@@ -107,6 +117,8 @@ p3_pub
 The following FeaturePlot show the spatial locations of **goblet cells**. The expression of the genes CLCA1, FCGBP, and MUC2 were identified in the tissue.
 
 ```{r}
+#| warning: false
+#| message: false
 #| echo: false
 genes <- c("CLCA1", "FCGBP", "MUC2")
 
@@ -115,7 +127,7 @@ p_feature_pub <- SpatialFeaturePlot(
   features = genes,
   pt.size.factor = 6,
   image.alpha = 0,
-  alpha = c(0.2, 1),
+  alpha = c(1, 1),
   min.cutoff = "q10",
   max.cutoff = "q90",
   keep.scale = "all"
@@ -142,6 +154,8 @@ Similarly, the following plot shows the expression of the genes REG1A, REG1B, CE
 
 ```{r}
 #| echo: false
+#| warning: false
+#| message: false
 genes <- c("REG1A", "REG1B", "CEACAM6", "TGFBI")
 
 p_feature_pub <- SpatialFeaturePlot(
@@ -176,6 +190,8 @@ Now, the following plot represents the presence of **Fibroblasts**. The expressi
 
 ```{r}
 #| echo: false
+#| warning: false
+#| message: false
 genes <- c("COL1A1", "MMP2")
 
 p_feature_pub <- SpatialFeaturePlot(
@@ -210,6 +226,8 @@ Similar plots can be drawn for the cell cluster Macrophage. We can identify the 
 
 ```{r}
 #| echo: false
+#| warning: false
+#| message: false
 genes <- c("LYZ1", "SPP1")
 
 p_feature_pub <- SpatialFeaturePlot(
@@ -244,6 +262,8 @@ Finally, we identify the population of Neutrophils through the expression of the
 
 ```{r}
 #| echo: false
+#| warning: false
+#| message: false
 genes <- c("SAT1")
 
 p_feature_pub <- SpatialFeaturePlot(
@@ -262,14 +282,14 @@ p_feature_pub <- SpatialFeaturePlot(
   ) &
   theme_void() &
   theme(
-    plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
+    title = element_text(size = 12, face = "bold", hjust = 0.5),
     legend.position = "right",
     legend.title = element_text(size = 10),
     legend.text = element_text(size = 9)
   )
 
 p_feature_pub <- p_feature_pub +
-  plot_annotation(tag_levels = "A")
+ggtitle("Neutrophils")
 
 p_feature_pub
 ```
@@ -278,6 +298,8 @@ To place similar cells together in a low-dimensional space, we not visualize a U
 
 ```{r}
 #| echo: false
+#| warning: false
+#| message: false
 p1_pub <- DimPlot(
   Colon,
   reduction = "umap",
@@ -323,6 +345,46 @@ final_umap_spatial
 ```
 
 ```{r}
+#| warning: false
+#| message: false
+#| echo: false
+genes <- c("FCGBP", "MUC2", "CLCA1", "REG1A", "REG1B", 
+           "CEACAM6", "TGFBI","COL1A1", "MMP2", "LYZ", "SPP1", "SAT1")
+
+
+p_feature_pub <- FeaturePlot(
+  Colon,
+  features = genes,
+  cols = c("lightgrey", "red"),     
+  pt.size = 1.5,                     
+  order = TRUE,                      
+  min.cutoff = "q10",                
+  max.cutoff = "q90",                
+  combine = FALSE                   
+)
+
+p_feature_pub <- lapply(p_feature_pub, function(p) {
+  p + 
+    ggtitle(p$labels$feature) +           
+    theme_void() +                       
+    theme(
+      plot.title = element_text(size = 12, face = "bold", hjust = 0.5),
+      legend.position = "right",
+      legend.title = element_text(size = 10),
+      legend.text = element_text(size = 9)
+    )
+})
+
+final_feature_pub <- wrap_plots(p_feature_pub, ncol = 4) + 
+  plot_annotation(tag_levels = "A")  # panel tags A, B, C...
+
+final_feature_pub
+```
+
+```{r}
+#| echo: false
+#| warning: false
+#| message: false
 Colon@meta.data <- Colon@meta.data %>% mutate(annotations = case_when(
 Spatial_snn_res.0.4 %in% 4 ~ 'Goblet', 
 Spatial_snn_res.0.4 %in% 1 ~ 'Fibroblasts',
@@ -331,10 +393,10 @@ TRUE ~ as.character(Spatial_snn_res.0.4)
 ))
 ```
 
-```{}
-```
-
 ```{r}
+#| echo: false
+#| warning: false
+#| message: false
 Markers <- FindAllMarkers(Colon, group.by = "Spatial_snn_res.0.4")
 head(Markers)
 ```
